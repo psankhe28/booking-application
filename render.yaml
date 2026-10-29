@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: appointment-booking
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /appointments/p1
