@@ -1,0 +1,259 @@
+{
+    "clientName": "Thunder Client",
+    "collectionName": "Appointment Booking",
+    "collectionId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+    "dateExported": "2026-10-28T20:09:15.535Z",
+    "version": "1.4",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "c9bbe1ac-3666-4cca-bc12-b86d3f774a01",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "1. Book valid appointment (p1)",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p1\",\"customerId\":\"c1\",\"startTime\":\"2026-11-01T10:00:00Z\",\"endTime\":\"2026-11-01T11:00:00Z\"}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "bffd73cd-8ffb-4662-af92-774871f9460c",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "2. Book overlapping appointment (p1) - expect 409",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p1\",\"customerId\":\"c2\",\"startTime\":\"2026-11-01T10:30:00Z\",\"endTime\":\"2026-11-01T11:30:00Z\"}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "fd6737b7-9ff1-40d7-9d3e-4b81b01da1ee",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "3. Book adjacent appointment (p1) - expect success",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p1\",\"customerId\":\"c3\",\"startTime\":\"2026-11-01T11:00:00Z\",\"endTime\":\"2026-11-01T12:00:00Z\"}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "16ef8384-6e39-45e7-bee2-11179a9ee21a",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "4. Book overlapping range, different provider (p2) - expect success",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 40000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p2\",\"customerId\":\"c4\",\"startTime\":\"2026-11-01T10:00:00Z\",\"endTime\":\"2026-11-01T11:00:00Z\"}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "2f691ac4-4090-4ba5-8c2d-ed1a59f264b9",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "5. Cancel first appointment - expect 200 CANCELLED",
+            "url": "http://localhost:8080/appointments/d320ea6e-8ec3-4b8a-8118-dc6696ca4822/cancel",
+            "method": "POST",
+            "sortNum": 50000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": []
+        },
+        {
+            "_id": "41f139f0-edac-4b39-91bf-30ee772031fb",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "6. Cancel same appointment again - expect 200 ALREADY_CANCELLED",
+            "url": "http://localhost:8080/appointments/d320ea6e-8ec3-4b8a-8118-dc6696ca4822/cancel",
+            "method": "POST",
+            "sortNum": 60000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": []
+        },
+        {
+            "_id": "dda36365-55d5-4234-b3ae-5970c8a7dd61",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "7. Cancel random never-booked UUID - expect 404",
+            "url": "http://localhost:8080/appointments/00000000-0000-0000-0000-000000000000/cancel",
+            "method": "POST",
+            "sortNum": 70000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": []
+        },
+        {
+            "_id": "bf7718d9-de2e-4447-9dc0-6d1574e02f26",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "8. Book with blank providerId - expect 400",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 80000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"\",\"customerId\":\"c5\",\"startTime\":\"2026-11-01T13:00:00Z\",\"endTime\":\"2026-11-01T14:00:00Z\"}"
+                ],
+                "form": []
+            }
+        },
+        {
+            "_id": "426309c8-5754-4aae-8098-31b586e17497",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "9. GET provider p1 appointments",
+            "url": "http://localhost:8080/appointments/p1",
+            "method": "GET",
+            "sortNum": 90000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": []
+        },
+        {
+            "_id": "669ad18b-74d7-4024-a4f4-c6792e694f55",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "10. Book zero-duration appointment - expect 400",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 100000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "_id": "4a61eb51-8cc8-4a84-964c-4c18c7045264",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "11. Book malformed timestamp - expect 400",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 110000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "_id": "639af96b-afbd-4363-a5d7-b61d988bf14e",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "12. Book non-Z offset timestamp - expect 400",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 120000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "_id": "715a710d-b6ff-4c23-afc8-89033f3cefcf",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "13. Book blank customerId - expect 400",
+            "url": "http://localhost:8080/appointments",
+            "method": "POST",
+            "sortNum": 130000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "_id": "627ce6dd-ce37-482b-9b10-b154e460c1b4",
+            "colId": "6b438f89-c9cf-487e-9d15-0baf37caff8c",
+            "containerId": "",
+            "name": "14. Cancel malformed id (not a UUID) - expect 400",
+            "url": "http://localhost:8080/appointments/not-a-uuid/cancel",
+            "method": "POST",
+            "sortNum": 140000,
+            "created": "2026-10-28T19:51:20.000Z",
+            "modified": "2026-10-28T19:51:20.000Z",
+            "headers": []
+        }
+    ],
+    "ref": "mPK9tz0T5jpIM78fTU1LahsbRBX0_em0BQLK4sy6-z4Mjg915ssICT3efPkw19irPO825x1NmkS2DHqa0DP61w"
+}
