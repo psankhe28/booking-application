@@ -189,7 +189,14 @@
                     "name": "Content-Type",
                     "value": "application/json"
                 }
-            ]
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p3\",\"customerId\":\"c6\",\"startTime\":\"2026-11-01T10:00:00Z\",\"endTime\":\"2026-11-01T10:00:00Z\"}"
+                ],
+                "form": []
+            }
         },
         {
             "_id": "4a61eb51-8cc8-4a84-964c-4c18c7045264",
@@ -206,7 +213,14 @@
                     "name": "Content-Type",
                     "value": "application/json"
                 }
-            ]
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p3\",\"customerId\":\"c6\",\"startTime\":\"not-a-timestamp\",\"endTime\":\"2026-11-01T11:00:00Z\"}"
+                ],
+                "form": []
+            }
         },
         {
             "_id": "639af96b-afbd-4363-a5d7-b61d988bf14e",
@@ -223,7 +237,14 @@
                     "name": "Content-Type",
                     "value": "application/json"
                 }
-            ]
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p3\",\"customerId\":\"c6\",\"startTime\":\"2026-11-01T10:00:00+05:00\",\"endTime\":\"2026-11-01T11:00:00Z\"}"
+                ],
+                "form": []
+            }
         },
         {
             "_id": "715a710d-b6ff-4c23-afc8-89033f3cefcf",
@@ -240,7 +261,14 @@
                     "name": "Content-Type",
                     "value": "application/json"
                 }
-            ]
+            ],
+            "body": {
+                "type": "json",
+                "raw": [
+                    "{\"providerId\":\"p3\",\"customerId\":\"\",\"startTime\":\"2026-11-01T10:00:00Z\",\"endTime\":\"2026-11-01T11:00:00Z\"}"
+                ],
+                "form": []
+            }
         },
         {
             "_id": "627ce6dd-ce37-482b-9b10-b154e460c1b4",
