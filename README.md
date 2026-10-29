@@ -81,4 +81,4 @@ Cancel it (replace `<id>` with the `id` from the response above):
 curl -i -X POST http://localhost:8080/appointments/<id>/cancel
 ```
 
-A fuller set of ready-to-run requests (including the rejection cases) is in `thunder-collection.json` — import it into the Thunder Client VS Code extension for a quick manual walkthrough.
+A fuller set of ready-to-run requests (including the rejection cases) is in `thunder-collection_Appointment Booking.json` — import it into the Thunder Client VS Code extension for a quick manual walkthrough.
