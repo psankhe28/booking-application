@@ -450,4 +450,161 @@ Update ai-retrospective.md in place. Make these five changes:
 
 **Note on the original prompt's exact phrasing:** it describes "the unrequested `customerId` field... later kept after reconsideration" and "the Thunder Client collection... with 5 requests missing their JSON bodies" as established facts to include. I did not simply restate either number as given — section 5 above documents precisely what happened with `customerId` (two literal-instruction deviations, not a removal-and-reversal), and section 6 above re-verified the Thunder Client body count directly against the live file rather than repeating "5" by default once I had reason to check it myself.
 
+---
+
+## 13. Swagger / OpenAPI documentation addition
+
+**Prompt (verbatim):**
+```
+Add API documentation via springdoc-openapi to make the REST API browsable/testable for a reviewer, without changing any existing behavior.
+
+NOW DO THIS
+1. Add the springdoc-openapi-starter-webmvc-ui dependency to pom.xml (use a current stable version compatible with Spring Boot 3.3.x).
+2. No other configuration should be needed for basic auto-generated docs from the existing @RestController - confirm this works at /swagger-ui.html and /v3/api-docs by default.
+3. Add light OpenAPI annotations (@Operation, @ApiResponse) to AppointmentController's three endpoints so the generated docs show: the expected request body for POST /appointments, and the distinct response codes/shapes for each case (201/400/409 for booking; 200/404/400 for cancel) — reuse the exact status codes and error shapes already implemented, don't invent new ones.
+4. Don't change any existing method signatures, validation logic, or response bodies — this is documentation only, it must not affect any of the 21 passing tests.
+5. Re-run the full test suite after and confirm it's still fully green.
+```
+
+**Not part of the assignment.** No acceptance criterion mentions API documentation — this is scope added on request, not something core.
+
+**What happened:** Picked the springdoc version by checking, not guessing: a web search of springdoc's own release notes confirmed `2.6.0` bumped its internal Spring Boot dependency to exactly `3.3.0`, matching this project's `3.3.4`. Added the dependency, then `@Operation` + `@ApiResponses` (with `@Content`/`@Schema` referencing the existing `AppointmentResponse`/`ErrorResponse`/`CancellationResponse` records) above each of the three existing method declarations — no method signature, validation logic, or response body touched, only annotations and six import lines.
+
+**Outcome:** Accepted as-is.
+
+**Files or decisions informed:** `pom.xml` (one dependency), `web/AppointmentController.java` (annotations + imports only).
+
+**Verification evidence — this one I actually checked end-to-end, not just assumed from springdoc's defaults:**
+- `mvn -q -DskipTests compile` after the dependency, then again after the annotations — both clean.
+- `mvn test` → `Tests run: 21, Failures: 0, Errors: 0, BUILD SUCCESS` — same count as before this change.
+- Killed whatever was on port 8080, started a fresh `mvn spring-boot:run`, waited for it to respond, then:
+  - `curl -s -o /tmp/claude-501-api-docs.json -w "HTTP %{http_code}\n" http://localhost:8080/v3/api-docs` → `HTTP 200`, and actually parsed the JSON (`python3 -c "import json; ..."`) to confirm `paths` listed all three endpoints with the right response-code sets (`['201','400','409']`, `['404','200','400']`, `['200']`) and `components.schemas` had `BookingRequest`/`AppointmentResponse`/`ErrorResponse`/`CancellationResponse` with the correct properties — not just that the endpoint returned `200`.
+  - `curl -s -i -o /dev/null -w "HTTP %{http_code} -> redirect: %{redirect_url}\n" http://localhost:8080/swagger-ui.html` → `HTTP 302 -> redirect: http://localhost:8080/swagger-ui/index.html`, then confirmed that target itself returned `HTTP 200`.
+
+---
+
+## 14. Dockerfile, `render.yaml`, and the `PORT` env var change
+
+**Prompt 1 (verbatim) — initial deployment setup:**
+```
+I want to deploy this project. Do the following:
+
+1. Add `server.port=${PORT:8080}` to src/main/resources/application.properties (Render/most PaaS platforms inject a PORT env var).
+2. Add a Dockerfile at the project root that builds and runs this Spring Boot app (multi-stage: build with Maven, run on a JRE base image, expose the port, entrypoint runs the jar).
+3. Add a .gitignore for a standard Maven/Java project (target/, *.class, .idea/, etc.) if one doesn't already exist.
+4. Initialize git if it isn't already (git init), stage everything relevant (not target/ build output), and make a first commit.
+5. Use this repository: https://github.com/psankhe28/booking-application
+6. Confirm the final state: show me `git log --oneline`, `git remote -v`, and confirm the Dockerfile builds locally if Docker is available (docker build -t appointment-booking .).
+
+Don't touch any source files beyond what's needed for the Dockerfile/port change - no behavior change, and re-run the test suite to confirm nothing broke.
+```
+(This prompt also covers the `.gitignore`/`git init` work — quoted here in full since it's the originating prompt, analyzed separately in section 15 below.)
+
+**Prompt 2 (verbatim) — Render.com blueprint, sent two turns later, after a separate "commit the current state" turn found nothing to commit:**
+```
+Now set this project up for deployment on Render.com.
+
+1. Add a render.yaml blueprint file at the project root defining a single Docker-based web service: build from the existing Dockerfile, free plan, health check path /appointments/p1 (returns 200 with an empty array even with no data, so it's a valid health check with no setup).
+2. Confirm the Dockerfile already added exposes the right port and respects the PORT env var via server.port=${PORT:8080} in application.properties.
+3. Give me the exact manual steps I still need to do myself in Render's dashboard (since you don't have browser/account access): signing up, connecting my GitHub account, and creating the new Web Service from this repo pointing at render.yaml.
+4. After I tell you it's deployed and give you the public URL, give me a curl command to verify it's live and the booking endpoint works end to end (book + cancel).
+
+Don't change any application behavior — this is deployment config only. Re-run the test suite after any file change to confirm nothing broke.
+```
+
+**What happened — `application.properties` and `Dockerfile` (Prompt 1):** Created `src/main/resources/application.properties` with `server.port=${PORT:8080}`. Wrote a two-stage `Dockerfile` (`maven:3.9-eclipse-temurin-17` build → `eclipse-temurin:17-jre` run, `EXPOSE 8080`, `ENTRYPOINT ["java","-jar","app.jar"]`), using the exact jar filename (`appointment-booking-0.0.1-SNAPSHOT.jar`) confirmed by grepping `pom.xml`'s `artifactId`/`version` rather than guessing or using a wildcard.
+
+**The Docker build check (Prompt 1, item 6) — be precise about what actually happened, not the clean version:** The first `docker build -t appointment-booking .` **failed**: `ERROR: Cannot connect to the Docker daemon at unix:///Users/m4-air/.docker/run/docker.sock. Is the docker daemon running?` (confirmed by reading the background task's output log directly). Docker was installed but the daemon wasn't running. I ran `open -a Docker` to start Docker Desktop, waited via a polling loop (`until docker info >/dev/null 2>&1; do sleep 2; done`), then retried — this one **succeeded**: confirmed via the build log's `exporting to image ... naming to docker.io/library/appointment-booking:latest done` and `docker images appointment-booking` showing a real image (`496MB`). I went further than the literal ask and also ran the built image (`docker run -d --rm -p 9090:9090 -e PORT=9090 ...`) to prove the `PORT` mechanism actually works at runtime, not just that the image builds: `curl` against the running container returned `200 []` for `GET /appointments/p1` and `201` with a real booking for `POST /appointments`, both against port `9090` — the port the container was told to use via `PORT`, not the `8080` baked into `EXPOSE`. Stopped the test container afterward.
+
+**What happened — `render.yaml` (Prompt 2):** Did not guess at the blueprint schema — used `WebFetch` against Render's own `blueprint-spec` docs to confirm the current field names (`runtime: docker`, not the deprecated `env: docker`; `dockerfilePath`; `plan: free`; `healthCheckPath`). Wrote `render.yaml` with those exact keys.
+
+**Honest gap on `render.yaml`: I never locally validated that this file would actually deploy correctly** — Render doesn't offer an easy local blueprint validator, and I didn't write one. The only real end-to-end confirmation came later and indirectly: when the user actually deployed it on Render and the live service worked (section 14's own prompt 2, item 4, fulfilled two turns later — see the live `curl` checks in the "public URL" turn, which succeeded). Between writing the file and that confirmation, its correctness rested on matching the documented schema, not on anything I ran myself.
+
+**Re-confirming the Dockerfile/port for Prompt 2, item 2 — by reading, not re-running:** For this specific instruction, I confirmed `EXPOSE 8080` and no hardcoded port binding in the `Dockerfile`, and `server.port=${PORT:8080}` in `application.properties`, by re-reading both files and citing the live container test from Prompt 1 above — I did not re-run a fresh `docker build`/`docker run` at that specific point in the conversation.
+
+**Outcome:** Accepted as-is, including the self-initiated extra (running the container, not just building it).
+
+**Files or decisions informed:** `src/main/resources/application.properties` (created), `Dockerfile` (created), `render.yaml` (created).
+
+**Verification evidence:**
+- `mvn test` → `Tests run: 21, Failures: 0, Errors: 0, BUILD SUCCESS`, run once after `application.properties` and once again after `render.yaml` — both clean, same count both times.
+- The failed-then-succeeded `docker build` sequence above, with the exact error message and exact success markers quoted from the real command output.
+- The live container test (`docker run` with `-e PORT=9090`, two `curl` calls, `docker stop`).
+- `WebFetch` against `https://render.com/docs/blueprint-spec` to confirm `render.yaml`'s field names before writing it.
+
+---
+
+## 15. Git repository setup and GitHub push
+
+**Prompt 1:** Same as section 14's Prompt 1 above (items 3–6 of that same message: `.gitignore`, `git init`, staging, first commit, adding the remote, and confirming `git log`/`git remote -v`) — not re-quoted here in full since it's one message; see section 14.
+
+**Prompt 2 (verbatim) — a later, separate "commit the current state" request:**
+```
+Commit the current state of this project to git.
+
+1. Run git status first and show me the full output so I can see exactly what's staged/unstaged/untracked before anything is committed.
+2. Stage only the relevant project files — source code, tests, pom.xml, the Dockerfile/render.yaml/application.properties changes, the docs (README.md, design-spec.md, assumptions.md, limitations.md, ai-retrospective.md), and the Thunder Client collection file. Do NOT stage target/ or any other build output — confirm .gitignore covers it, add it if missing.
+3. Show me the diff of what's about to be committed (git diff --staged) before committing, so I can sanity-check nothing unexpected is included.
+4. Write a commit message that accurately describes what this commit contains (don't just say "update files" — be specific about what changed, e.g. implementation + tests + docs + deployment config, whatever is actually true for this commit).
+5. Commit, then run git log --oneline and git status again to confirm a clean working tree afterward.
+```
+
+**Prompt 3 (verbatim) — push, bundled with the start of the render.yaml request:**
+```
+Push the latest changes and then
+
+[Now set this project up for deployment on Render.com. ... — full text quoted in section 14, Prompt 2]
+```
+
+**What happened:** For Prompt 1: wrote `.gitignore` (`target/`, `*.class`, `.idea/`, `.vscode/`, `.DS_Store`, `*.log`); ran `git init`; renamed the default branch to `main` (GitHub's current convention, not strictly asked for but a reasonable call given the explicit remote target was a GitHub repo); ran `git add .` then `git status` *before* committing to confirm nothing from `target/` got staged (it didn't — `.gitignore` worked); committed; added `origin` pointing at `https://github.com/psankhe28/booking-application.git`; **did not push** at that point, on purpose — the prompt said "use this repository," not "push," and pushing is the kind of shared-state action I hold back on without explicit instruction. Reported `git log --oneline` / `git remote -v` as asked and said plainly that I hadn't pushed and would on request.
+
+For Prompt 2: ran `git status` first as instructed — it came back `nothing to commit, working tree clean`, because Prompt 1 had already committed everything (source, tests, docs, Dockerfile, `.gitignore`) in one commit. There was genuinely nothing to stage, diff, or write a message for. I said so plainly rather than fabricating an empty commit, and separately flagged that no `render.yaml` existed yet (the user's instruction text mentioned it as if it existed).
+
+For Prompt 3: the user's "Push the latest changes" is the explicit instruction this time. Checked `gh auth status` first (confirmed authenticated as `psankhe28` with `repo` scope — matching the target repo's owner) before attempting `git push -u origin main`, which succeeded (`* [new branch] main -> main`). Then handled the `render.yaml` portion of the same message (section 14), committed it, and pushed again (`git push origin main`), which also succeeded.
+
+**A repo-state discrepancy I found and flagged, not caused:** While committing the README update later (section 16), the first two commits' hashes no longer matched what I'd reported earlier (`29db81f`/`e225ab2` → `27f011c`/`4d157ea`). `git reflog` showed a `commit (amend)` entry I never issued, and `git log --format` showed the commit author as `psankhe28` (the user's own identity) — strong evidence the user amended/rebased locally between turns, via their own IDE or git tooling, not something I did. I checked `git diff` between the old and new initial-commit hashes to confirm file content was equivalent, and confirmed my subsequent push was a clean fast-forward (no force needed, no rejection) — so nothing was lost. I reported this to the user rather than silently absorbing it or reverting anything.
+
+**Outcome:** Accepted as-is; the deliberate non-push in Prompt 1, the honest "nothing to commit" in Prompt 2, and the flagged-not-fixed history discrepancy were all judgment calls that held up without correction.
+
+**Files or decisions informed:** `.gitignore` (created); no source files — this section is entirely about repository/version-control state, not application code.
+
+**Verification evidence:** `git status` output shown in full before every stage/commit (Prompt 1 and Prompt 2); `git add .` followed immediately by `git status` to confirm `target/` was excluded; `gh auth status` output checked before the push attempt; the literal push command outputs (`[new branch] main -> main`, and the later fast-forward confirmations); the `git reflog`, `git log --format="%H %ad %cd %s"`, and `git diff <old-hash> <new-hash>` commands used to investigate and confirm the history-rewrite discrepancy was benign.
+
+---
+
+## 16. README updates — Repository and Live Deployment sections
+
+**Prompt (verbatim):**
+```
+Update README.md with three additions:
+
+1. Near the top, right after the title/intro line (before "Prerequisites"): a short "Repository" section with the GitHub link https://github.com/psankhe28/booking-application and a one-line clone command (git clone https://github.com/psankhe28/booking-application.git). One or two lines, no duplication of content covered elsewhere.
+
+2. A "Live Deployment" section (after "Build & run," before or after "Run the tests," whichever reads better):
+   - Live URL: https://booking-application-qig0.onrender.com
+   - Note this is a public demo on Render's free tier, not a production environment.
+   - One or two example curl commands against the deployed URL instead of localhost (book + cancel).
+   - Explicit caveat: the free tier spins down after inactivity, and since the store is purely in-memory, every spin-down/restart wipes all appointment data — treat the live instance as a stateless demo, not something to rely on for persisted data between visits.
+
+3. In that same Live Deployment section (or right after it), mention Swagger UI is live for a browsable view of the API: https://booking-application-qig0.onrender.com/swagger-ui.html — one line, framed as a bonus/convenience for a reviewer who wants to explore the API without curl.
+
+Keep the existing "Prerequisites," "Build & run," and "Run the tests" sections exactly as they are — this is additive only.
+```
+
+(Sent one turn after the user confirmed the live deployment URL, in response to which I'd already run live `curl` checks against it — see below.)
+
+**What happened:** Read the current `README.md` in full first. Added a **Repository** section (link + clone command) immediately after the intro paragraph, before "Prerequisites." Added a **Live Deployment** section after "Build & run" (and before the pre-existing "API documentation" section, which covers the *local* Swagger UI and was left untouched) — live URL, the free-tier/demo framing, two `curl` examples against the deployed URL, the spin-down/in-memory-wipe caveat, and the Swagger UI line. Read the full file back afterward to confirm "Prerequisites," "Build & run," and "Run the tests" were byte-for-byte unchanged.
+
+**The curl commands in the README were not written speculatively** — they're the same book/cancel calls already run live against `https://booking-application-qig0.onrender.com` in the immediately preceding turn (confirmed there: `201` on book, `200` with `result:"CANCELLED"` then `result:"ALREADY_CANCELLED"` on the two cancels), so what's documented matches what was already proven to work, not just what was expected to work.
+
+**The Swagger UI line is a different story, and worth being honest about.** When I first told the user the deployment was "fully live and working end-to-end" and mentioned Swagger UI as a bonus, I had **not** checked `/swagger-ui.html` or `/v3/api-docs` against the live Render URL at all — only against `localhost` in section 13, weeks (turns) earlier. That unverified claim is what ended up in this README edit too. While writing *this retrospective entry*, I went back and actually checked: `curl -i https://booking-application-qig0.onrender.com/swagger-ui.html` → `HTTP 302` redirecting to `/swagger-ui/index.html`, and `GET /v3/api-docs` → `HTTP 200`. So the claim happens to be true, but it was asserted before it was verified, not after — a real instance of stating something with more confidence than I'd actually earned at the time.
+
+**No test suite re-run for this change** — and that was a deliberate decision, not an oversight: this edit touches only `README.md`, a Markdown file with no relationship to compiled Java code, and this specific prompt didn't ask for a re-run (unlike the two deployment-config prompts in sections 14/15, which explicitly did). Running `mvn test` against an unrelated Markdown-only change would have been a reflex, not a real check.
+
+**Outcome:** Accepted as-is. The Swagger-UI-on-live-URL claim is flagged above as unverified-at-the-time, now verified-after-the-fact.
+
+**Files or decisions informed:** `README.md` only.
+
+**Verification evidence:** The file was read in full before and after editing (confirming the untouched sections stayed untouched); `git diff README.md` was reviewed before staging to confirm the diff was purely additive (no deletions in the existing sections); the two `curl` commands placed in the README match commands already executed live one turn earlier; the Swagger UI claim was re-verified live just now, specifically while writing this entry (`HTTP 302` → `/swagger-ui/index.html`, then `GET /v3/api-docs` → `HTTP 200`), closing the gap between when the claim was made and when it was actually checked.
+
 **Files or decisions informed:** `ai-retrospective.md` itself (this file, both the original version and this revision).
