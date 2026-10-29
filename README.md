@@ -2,6 +2,14 @@
 
 A small Spring Boot REST service that prevents a provider from being booked for overlapping active appointments, with conflict-safe booking and cancellation. Built as a bounded assessment slice — see [design-spec.md](design-spec.md) for the design rationale and [limitations.md](limitations.md) for what's intentionally not here.
 
+## Repository
+
+[github.com/psankhe28/booking-application](https://github.com/psankhe28/booking-application)
+
+```bash
+git clone https://github.com/psankhe28/booking-application.git
+```
+
 ## Prerequisites
 
 - Java 17+
@@ -14,6 +22,30 @@ mvn spring-boot:run
 ```
 
 Starts on `http://localhost:8080`. No configuration or database needed — the store is in-memory only (see [limitations.md](limitations.md)).
+
+## Live Deployment
+
+Live URL: [https://booking-application-qig0.onrender.com](https://booking-application-qig0.onrender.com)
+
+This is a public demo running on Render's free tier, not a production environment.
+
+Book an appointment:
+
+```bash
+curl -i -X POST https://booking-application-qig0.onrender.com/appointments \
+  -H "Content-Type: application/json" \
+  -d '{"providerId":"p1","customerId":"c1","startTime":"2026-11-01T10:00:00Z","endTime":"2026-11-01T11:00:00Z"}'
+```
+
+Cancel it (replace `<id>` with the `id` from the response above):
+
+```bash
+curl -i -X POST https://booking-application-qig0.onrender.com/appointments/<id>/cancel
+```
+
+**Caveat:** the free tier spins down after inactivity, and since the store is purely in-memory, every spin-down/restart wipes all appointment data — treat the live instance as a stateless demo, not something to rely on for persisted data between visits.
+
+For a browsable view of the API without curl, Swagger UI is live at [https://booking-application-qig0.onrender.com/swagger-ui.html](https://booking-application-qig0.onrender.com/swagger-ui.html) — a convenience for a reviewer who wants to explore the endpoints directly.
 
 ## API documentation
 
